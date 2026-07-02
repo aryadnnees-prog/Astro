@@ -1,0 +1,8 @@
+<?php
+session_start();
+
+$_SESSION["rol"] = "admin";
+$_SESSION["usuario"] = "Administrador Astro";
+
+header("Location: index.php");
+exit;

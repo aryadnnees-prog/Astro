@@ -1,0 +1,340 @@
+---
+import AdminLayout from '../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Nueva Venta (POS)" activeTab="ventas">
+  <div class="section-head">
+    <div>
+      <h1>🛒 Nueva Venta</h1>
+      <div class="muted">Punto de venta para registrar operaciones en la Sucursal 1.</div>
+    </div>
+  </div>
+
+  <style>
+    .notice {
+      display: none;
+      margin-bottom: 18px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #ddf7ed;
+      color: var(--ok);
+      font-weight: 700;
+      border: 1px solid rgba(22, 128, 93, 0.2);
+    }
+    .notice.show {
+      display: block;
+    }
+    .notice.error {
+      background: #fdf2f8;
+      color: var(--danger);
+      border-color: rgba(217, 61, 146, 0.2);
+    }
+    .pos-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) minmax(300px, 440px);
+      align-items: start;
+      gap: 16px;
+    }
+    .suggestions {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .suggestion {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      transition: all 0.2s;
+    }
+    .suggestion:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      border-color: var(--brand);
+    }
+    .cart-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .cart-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+    .total-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 18px;
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--brand-dark);
+      border-top: 2px dashed var(--line);
+      padding-top: 14px;
+    }
+    .actions-bar {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+    }
+    .actions-bar button {
+      flex: 1;
+    }
+    @media (max-width: 980px) {
+      .pos-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <div id="saleNotice" class="notice"></div>
+
+  <div class="pos-grid">
+    <!-- Panel Izquierdo: Buscador y Sugerencias -->
+    <div class="card">
+      <h2>Buscar Cliente y Producto</h2>
+      <div class="toolbar" style="flex-direction: column; gap: 12px; margin-bottom: 0;">
+        <input id="clientName" type="text" placeholder="Cliente (opcional - Consumidor Final por defecto)" />
+        <input id="posSearch" type="search" placeholder="Buscar producto por nombre..." />
+      </div>
+      <div id="suggestions" class="suggestions">
+        <p class="muted" style="text-align:center; padding: 20px;">Escribe en el buscador para ver productos.</p>
+      </div>
+    </div>
+
+    <!-- Panel Derecho: Carrito POS -->
+    <div class="card">
+      <h2>Carrito de Ventas</h2>
+      <div id="cartRows" class="cart-rows">
+        <p class="muted">El carrito está vacío.</p>
+      </div>
+      
+      <div class="total-line">
+        <span>Total</span>
+        <span id="cartTotal">$ 0</span>
+      </div>
+      
+      <div class="actions-bar">
+        <button class="btn-secondary" onclick="clearCart()">Vaciar Carrito</button>
+        <button class="btn-primary" onclick="finishSale()">Finalizar Venta</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { supabase } from '../lib/supabase';
+
+    let allProducts = [];
+    let posCart = [];
+
+    const money = value => "$ " + Number(value).toLocaleString("es-AR");
+
+    // Mostrar aviso
+    function showNotice(text, isError = false) {
+      const notice = document.getElementById("saleNotice");
+      notice.textContent = text;
+      notice.classList.toggle("error", isError);
+      notice.classList.add("show");
+      
+      // Auto ocultar después de 4 segundos
+      setTimeout(() => {
+        notice.classList.remove("show");
+      }, 4000);
+    }
+
+    // Cargar productos con sus stock de Supabase
+    async function loadProducts() {
+      const { data, error } = await supabase
+        .from('productos')
+        .select('*, stock(*)');
+
+      if (error) {
+        console.error("Error al cargar productos", error);
+        return;
+      }
+      
+      allProducts = data || [];
+      renderSuggestions();
+    }
+
+    // Renderizar sugerencias basadas en la búsqueda
+    function renderSuggestions() {
+      const search = document.getElementById("posSearch").value.toLowerCase().trim();
+      const suggestionsDiv = document.getElementById("suggestions");
+
+      if (!search) {
+        suggestionsDiv.innerHTML = '<p class="muted" style="text-align:center; padding:20px;">Escribe en el buscador para ver productos.</p>';
+        return;
+      }
+
+      const filtered = allProducts.filter(p => p.nombre.toLowerCase().includes(search)).slice(0, 6);
+
+      if (filtered.length === 0) {
+        suggestionsDiv.innerHTML = '<p class="muted" style="text-align:center; padding:20px;">No se encontraron productos.</p>';
+        return;
+      }
+
+      suggestionsDiv.innerHTML = filtered.map(p => {
+        const stockSuc1 = p.stock ? p.stock.sucursal1 : 0;
+        const color = stockSuc1 < 5 ? 'color:var(--danger); font-weight:bold;' : '';
+
+        return `
+          <div class="suggestion">
+            <div>
+              <strong>${p.nombre}</strong><br />
+              <span class="muted" style="${color}">Precio: ${money(p.precio)} · Stock Sucursal 1: ${stockSuc1}</span>
+            </div>
+            <button class="btn-primary" style="min-height:34px; padding:0 12px; font-size:13px;" onclick="addToCart(${p.id})">Agregar</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Agregar al carrito
+    window.addToCart = function(id) {
+      const product = allProducts.find(p => p.id === id);
+      if (!product) return;
+
+      const stockSuc1 = product.stock ? product.stock.sucursal1 : 0;
+
+      if (stockSuc1 <= 0) {
+        showNotice("No hay stock disponible en Sucursal 1 para este producto.", true);
+        return;
+      }
+
+      const existing = posCart.find(item => item.id === id);
+      const qtyInCart = existing ? existing.qty : 0;
+
+      if (qtyInCart + 1 > stockSuc1) {
+        showNotice("No puedes agregar más cantidad que el stock disponible en Sucursal 1.", true);
+        return;
+      }
+
+      if (existing) {
+        existing.qty++;
+      } else {
+        posCart.push({
+          id: product.id,
+          nombre: product.nombre,
+          precio: product.precio,
+          qty: 1,
+          stock: product.stock
+        });
+      }
+
+      renderCart();
+    };
+
+    // Renderizar carrito
+    function renderCart() {
+      const cartRowsDiv = document.getElementById("cartRows");
+      const cartTotalSpan = document.getElementById("cartTotal");
+
+      if (posCart.length === 0) {
+        cartRowsDiv.innerHTML = '<p class="muted">El carrito está vacío.</p>';
+        cartTotalSpan.textContent = money(0);
+        return;
+      }
+
+      cartRowsDiv.innerHTML = posCart.map(item => `
+        <div class="cart-row">
+          <div>
+            <strong>${item.nombre}</strong><br />
+            <span class="muted">${money(item.precio)} x ${item.qty}</span>
+          </div>
+          <strong>${money(item.precio * item.qty)}</strong>
+          <button class="btn btn-secondary" style="min-height:30px; padding:0 8px; font-size:12px;" onclick="removeFromCart(${item.id})">X</button>
+        </div>
+      `).join('');
+
+      const total = posCart.reduce((sum, item) => sum + (item.precio * item.qty), 0);
+      cartTotalSpan.textContent = money(total);
+    }
+
+    // Remover del carrito
+    window.removeFromCart = function(id) {
+      posCart = posCart.filter(item => item.id !== id);
+      renderCart();
+    };
+
+    // Vaciar carrito
+    window.clearCart = function() {
+      posCart = [];
+      renderCart();
+    };
+
+    // Finalizar Venta
+    window.finishSale = async function() {
+      if (posCart.length === 0) {
+        showNotice("El carrito está vacío. Agrega productos antes de vender.", true);
+        return;
+      }
+
+      const total = posCart.reduce((sum, item) => sum + (item.precio * item.qty), 0);
+      const clientInput = document.getElementById("clientName").value.trim();
+      const cliente = clientInput || "Consumidor Final";
+
+      // 1. Guardar la venta en Supabase
+      const { data: sale, error: saleErr } = await supabase
+        .from('ventas')
+        .insert([{ total, cliente }])
+        .select()
+        .single();
+
+      if (saleErr) {
+        showNotice("Error al registrar la venta: " + saleErr.message, true);
+        return;
+      }
+
+      // 2. Descontar stock de Sucursal 1 para cada producto
+      let stockSuccess = true;
+      for (const item of posCart) {
+        const currentStock = item.stock ? item.stock.sucursal1 : 0;
+        const newStock = Math.max(0, currentStock - item.qty);
+
+        const { error: stockErr } = await supabase
+          .from('stock')
+          .update({ sucursal1: newStock })
+          .eq('producto_id', item.id);
+
+        if (stockErr) {
+          console.error(`Error actualizando stock de producto ID ${item.id}`, stockErr);
+          stockSuccess = false;
+        }
+      }
+
+      if (!stockSuccess) {
+        showNotice("Venta registrada, pero ocurrieron errores al actualizar el inventario.", true);
+      } else {
+        showNotice(`Venta finalizada con éxito. Total: ${money(total)}. Se descontó stock de Sucursal 1.`);
+      }
+
+      // Limpiar estados
+      posCart = [];
+      document.getElementById("clientName").value = '';
+      document.getElementById("posSearch").value = '';
+      
+      renderCart();
+      await loadProducts(); // Recargar productos y stock actualizado
+    };
+
+    // Event listeners
+    document.getElementById("posSearch").addEventListener("input", renderSuggestions);
+
+    // Inicializar
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        loadProducts();
+      }
+    });
+  </script>
+</AdminLayout>

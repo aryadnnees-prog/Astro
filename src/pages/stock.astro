@@ -1,0 +1,276 @@
+---
+import AdminLayout from '../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Inventario y Stock" activeTab="stock">
+  <div class="section-head">
+    <div>
+      <h1>📦 Stock por Ubicación</h1>
+      <div class="muted">Inventario centralizado y sincronizado por depósito, sucursales y tienda online.</div>
+    </div>
+    <select id="locationFilter">
+      <option value="todas">Ver ubicación: Todas</option>
+      <option value="deposito">Depósito</option>
+      <option value="sucursal1">Sucursal 1</option>
+      <option value="sucursal2">Sucursal 2</option>
+      <option value="online">Tienda Online</option>
+    </select>
+  </div>
+
+  <style>
+    .stock-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .stock-badge.low {
+      background: #fdf2f8;
+      color: var(--danger);
+    }
+    .stock-badge.ok {
+      background: #ddf7ed;
+      color: var(--ok);
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(19, 5, 82, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      backdrop-filter: blur(4px);
+    }
+    .modal-content {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      width: 440px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      border: 1px solid var(--line);
+    }
+    .modal-content h3 {
+      margin: 0 0 20px;
+      color: var(--brand-dark);
+    }
+    .modal-content label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin-top: 10px;
+      margin-bottom: 6px;
+      color: var(--brand-dark);
+    }
+    .modal-content input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+  </style>
+
+  <!-- Tabla de Inventario -->
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <table>
+      <thead id="stockHead">
+        <!-- Renderizado dinámico de cabeceras -->
+      </thead>
+      <tbody id="stockRows">
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 20px;" class="muted">
+            Cargando inventario...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal para Ajustar Stock -->
+  <div class="modal" id="stockModal">
+    <div class="modal-content">
+      <h3 id="modalTitle">Ajustar Inventario</h3>
+      <input type="hidden" id="adjust_prod_id" />
+      
+      <p><strong id="adjust_prod_name" style="color:var(--brand-dark); font-size:16px;">Producto</strong></p>
+
+      <label for="stock_deposito">Depósito Central</label>
+      <input type="number" id="stock_deposito" min="0" required />
+
+      <label for="stock_sucursal1">Sucursal 1</label>
+      <input type="number" id="stock_sucursal1" min="0" required />
+
+      <label for="stock_sucursal2">Sucursal 2</label>
+      <input type="number" id="stock_stock_sucursal2" min="0" required />
+
+      <label for="stock_online">Tienda Online</label>
+      <input type="number" id="stock_online" min="0" required />
+
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="cerrarStockModal()">Cancelar</button>
+        <button class="btn-primary" onclick="guardarStock()">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { supabase } from '../lib/supabase';
+
+    let allProducts = [];
+
+    const stockTotal = p => p.stock ? (p.stock.deposito + p.stock.sucursal1 + p.stock.sucursal2 + p.stock.online) : 0;
+
+    async function loadStock() {
+      const { data, error } = await supabase
+        .from('productos')
+        .select('*, stock(*)');
+
+      if (error) {
+        console.error("Error cargando inventario", error);
+        return;
+      }
+
+      allProducts = data || [];
+      renderStockTable();
+    }
+
+    function renderStockTable() {
+      const location = document.getElementById("locationFilter").value;
+      const head = document.getElementById("stockHead");
+      const tbody = document.getElementById("stockRows");
+
+      if (allProducts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;" class="muted">No hay productos en catálogo.</td></tr>';
+        return;
+      }
+
+      if (location === "todas") {
+        head.innerHTML = `
+          <tr>
+            <th>Producto</th>
+            <th>Depósito</th>
+            <th>Sucursal 1</th>
+            <th>Sucursal 2</th>
+            <th>Tienda Online</th>
+            <th>Total General</th>
+            <th>Acciones</th>
+          </tr>
+        `;
+
+        tbody.innerHTML = allProducts.map(p => {
+          const stk = p.stock || { deposito: 0, sucursal1: 0, sucursal2: 0, online: 0 };
+          const total = stockTotal(p);
+          const totalBadgeClass = total <= 25 ? 'stock-badge low' : 'stock-badge ok';
+
+          return `
+            <tr>
+              <td style="font-weight:bold; color:var(--brand-dark);">${p.nombre}</td>
+              <td>${stk.deposito}</td>
+              <td>${stk.sucursal1}</td>
+              <td>${stk.sucursal2}</td>
+              <td>${stk.online}</td>
+              <td><span class="${totalBadgeClass}">${total}</span></td>
+              <td>
+                <button class="btn btn-secondary" style="min-height:30px; padding:0 12px; font-size:12px;" onclick='abrirStockModal(${JSON.stringify(p)})'>Ajustar</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        const labels = {
+          deposito: "Depósito Central",
+          sucursal1: "Sucursal 1",
+          sucursal2: "Sucursal 2",
+          online: "Tienda Online"
+        };
+
+        head.innerHTML = `
+          <tr>
+            <th>Producto</th>
+            <th>${labels[location]}</th>
+            <th>Total General</th>
+            <th>Acciones</th>
+          </tr>
+        `;
+
+        tbody.innerHTML = allProducts.map(p => {
+          const stk = p.stock || { deposito: 0, sucursal1: 0, sucursal2: 0, online: 0 };
+          const value = stk[location] || 0;
+          const badgeClass = value < 5 ? 'stock-badge low' : 'stock-badge ok';
+
+          return `
+            <tr>
+              <td style="font-weight:bold; color:var(--brand-dark);">${p.nombre}</td>
+              <td><span class="${badgeClass}">${value}</span></td>
+              <td>${stockTotal(p)}</td>
+              <td>
+                <button class="btn btn-secondary" style="min-height:30px; padding:0 12px; font-size:12px;" onclick='abrirStockModal(${JSON.stringify(p)})'>Ajustar</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    // Modal Helpers
+    window.abrirStockModal = function(p) {
+      const modal = document.getElementById("stockModal");
+      const stk = p.stock || { deposito: 0, sucursal1: 0, sucursal2: 0, online: 0 };
+
+      document.getElementById("adjust_prod_id").value = p.id;
+      document.getElementById("adjust_prod_name").textContent = p.nombre;
+      
+      document.getElementById("stock_deposito").value = stk.deposito;
+      document.getElementById("stock_sucursal1").value = stk.sucursal1;
+      document.getElementById("stock_stock_sucursal2").value = stk.sucursal2; // Nota: Id corregido para sucursal 2
+      document.getElementById("stock_online").value = stk.online;
+
+      modal.style.display = 'flex';
+    };
+
+    window.cerrarStockModal = function() {
+      document.getElementById("stockModal").style.display = 'none';
+    };
+
+    window.guardarStock = async function() {
+      const prod_id = document.getElementById("adjust_prod_id").value;
+      const deposito = parseInt(document.getElementById("stock_deposito").value) || 0;
+      const sucursal1 = parseInt(document.getElementById("stock_sucursal1").value) || 0;
+      const sucursal2 = parseInt(document.getElementById("stock_stock_sucursal2").value) || 0;
+      const online = parseInt(document.getElementById("stock_online").value) || 0;
+
+      if (!prod_id) return;
+
+      const { error } = await supabase
+        .from('stock')
+        .update({ deposito, sucursal1, sucursal2, online })
+        .eq('producto_id', prod_id);
+
+      if (error) {
+        alert("Error al actualizar inventario: " + error.message);
+        return;
+      }
+
+      cerrarStockModal();
+      await loadStock();
+    };
+
+    // Event listeners
+    document.getElementById("locationFilter").addEventListener("change", renderStockTable);
+
+    // Inicializar
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        loadStock();
+      }
+    });
+  </script>
+</AdminLayout>

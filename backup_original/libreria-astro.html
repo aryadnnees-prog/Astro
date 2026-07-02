@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Libreria Astro - Sistema Online</title>
+  <style>
+    :root {
+      --bg: #fbf9ff;
+      --panel: #ffffff;
+      --text: #130552;
+      --muted: #6c6592;
+      --line: #e5dcf2;
+      --brand: #991fa6;
+      --brand-dark: #130552;
+      --accent: #ea6dc9;
+      --blue: #2441e1;
+      --purple: #65026d;
+      --danger: #d93d92;
+      --ok: #16805d;
+      --warn: #a36a00;
+      --soft: #f8eafd;
+      --shadow: 0 14px 32px rgba(19, 5, 82, 0.10);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--brand-dark);
+      font-weight: 900;
+    }
+
+    .brand-icon,
+    .mini-logo {
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--purple), var(--brand), var(--blue));
+      position: relative;
+      font-weight: 900;
+      box-shadow: 0 10px 24px rgba(101, 2, 109, 0.24);
+    }
+
+    .brand-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      font-size: 27px;
+    }
+
+    .brand-icon::after,
+    .mini-logo::after {
+      content: "";
+      position: absolute;
+      border: 3px solid var(--accent);
+      border-top: 0;
+      border-left-color: transparent;
+      border-radius: 50%;
+      transform: rotate(-16deg);
+    }
+
+    .brand-icon::after {
+      width: 42px;
+      height: 12px;
+      top: 11px;
+      left: 3px;
+    }
+
+    .brand-text {
+      display: grid;
+      line-height: 1.05;
+    }
+
+    .astro-word {
+      font-size: 25px;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+    }
+
+    .brand-text small {
+      margin-top: 4px;
+      color: var(--brand);
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: calc(100vh - 81px);
+    }
+
+    aside {
+      background: linear-gradient(180deg, #130552 0%, #29006a 55%, #65026d 100%);
+      color: white;
+      padding: 18px 14px;
+    }
+
+    .role {
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.10);
+      border-radius: 8px;
+      margin-bottom: 14px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .tab-btn {
+      width: 100%;
+      border: 0;
+      cursor: pointer;
+      text-align: left;
+      padding: 12px;
+      border-radius: 8px;
+      background: transparent;
+      color: #f1e9ff;
+      font-size: 15px;
+    }
+
+    .tab-btn:hover,
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--brand), var(--accent));
+      color: white;
+    }
+
+    main {
+      padding: 24px;
+      overflow-x: hidden;
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 18px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .access-note {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      color: var(--brand-dark);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .widgets {
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .metric {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 25px;
+      margin-top: 6px;
+    }
+
+    .metric-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #f8eafd, #eef1ff);
+      color: var(--brand);
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .charts {
+      grid-template-columns: 1.4fr 0.8fr;
+    }
+
+    canvas {
+      width: 100%;
+      max-height: 280px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    input,
+    select {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 12px;
+      background: white;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    input { min-width: 230px; }
+
+    button {
+      min-height: 40px;
+      border: 0;
+      border-radius: 8px;
+      padding: 0 14px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--brand), var(--accent));
+      color: white;
+      box-shadow: 0 8px 18px rgba(153, 31, 166, 0.20);
+    }
+
+    .btn-secondary {
+      background: #f2e9fb;
+      color: var(--text);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      background: white;
+      border-radius: 8px;
+    }
+
+    th,
+    td {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f8eafd;
+      color: var(--brand-dark);
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .product-img,
+    .cover {
+      display: grid;
+      place-items: center;
+      color: white;
+      font-weight: 900;
+      background: linear-gradient(145deg, var(--purple), var(--accent), var(--blue));
+    }
+
+    .product-img {
+      width: 42px;
+      height: 56px;
+      border-radius: 6px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 36px;
+      min-height: 36px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      background: #f2e9fb;
+      color: var(--text);
+    }
+
+    .pos-grid {
+      grid-template-columns: minmax(260px, 1fr) minmax(300px, 440px);
+      align-items: start;
+    }
+
+    .suggestions {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .suggestion,
+    .cart-row,
+    .shop-cart-row {
+      display: grid;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .suggestion {
+      grid-template-columns: 1fr auto;
+    }
+
+    .cart-row,
+    .shop-cart-row {
+      grid-template-columns: 1fr auto auto;
+      margin-bottom: 10px;
+    }
+
+    .total-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 14px;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status.warn {
+      background: #fff2d8;
+      color: var(--warn);
+    }
+
+    .status.ok {
+      background: #ddf7ed;
+      color: var(--ok);
+    }
+
+    .shop-shell {
+      background: white;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .shop-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .shop-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: max-content;
+      color: var(--brand-dark);
+      font-weight: 900;
+      letter-spacing: 2px;
+    }
+
+    .mini-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+    }
+
+    .mini-logo::after {
+      width: 31px;
+      height: 9px;
+      top: 8px;
+      left: 2px;
+      border-width: 2px;
+    }
+
+    .hamburger {
+      width: 42px;
+      min-height: 42px;
+      padding: 0;
+      background: linear-gradient(135deg, var(--brand-dark), var(--blue));
+      color: white;
+      font-size: 20px;
+    }
+
+    .cart-badge {
+      position: relative;
+      width: 42px;
+      min-height: 42px;
+      padding: 0;
+      background: #f2e9fb;
+      color: var(--text);
+      font-size: 19px;
+    }
+
+    .cart-badge span {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: var(--accent);
+      color: var(--brand-dark);
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .shop-hero {
+      display: grid;
+      grid-template-columns: minmax(240px, 1fr) 260px;
+      align-items: center;
+      gap: 18px;
+      padding: 24px 28px;
+      background:
+        radial-gradient(circle at 88% 18%, rgba(234, 109, 201, 0.35), transparent 22%),
+        linear-gradient(135deg, #fff 0%, #fbecff 45%, #eef1ff 100%);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .shop-hero h2 {
+      margin: 0 0 8px;
+      max-width: 440px;
+      font-size: 29px;
+      line-height: 1.12;
+      color: var(--brand-dark);
+    }
+
+    .shop-hero p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .book-stack {
+      width: 220px;
+      height: 150px;
+      justify-self: center;
+      position: relative;
+    }
+
+    .book-stack span {
+      position: absolute;
+      right: 10px;
+      width: 165px;
+      height: 38px;
+      border-radius: 8px 18px 18px 8px;
+      background: white;
+      border: 3px solid var(--blue);
+      box-shadow: 0 8px 18px rgba(19, 5, 82, 0.16);
+    }
+
+    .book-stack span:nth-child(1) {
+      top: 18px;
+      transform: rotate(-12deg);
+      background: linear-gradient(90deg, var(--purple) 0 72%, white 72%);
+      border-color: var(--purple);
+    }
+
+    .book-stack span:nth-child(2) {
+      top: 60px;
+      right: 34px;
+      background: linear-gradient(90deg, var(--accent) 0 72%, white 72%);
+      border-color: var(--accent);
+    }
+
+    .book-stack span:nth-child(3) {
+      top: 100px;
+      transform: rotate(5deg);
+      background: linear-gradient(90deg, var(--blue) 0 72%, white 72%);
+    }
+
+    .categories {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .category-chip {
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: var(--brand-dark);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .category-chip.active {
+      background: var(--soft);
+      color: var(--brand);
+      outline: 2px solid rgba(153, 31, 166, 0.18);
+    }
+
+    .catalog {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      gap: 16px;
+      padding: 16px;
+    }
+
+    .catalog-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fbfcfe;
+    }
+
+    .cover {
+      aspect-ratio: 4 / 3;
+      font-size: 22px;
+    }
+
+    .catalog-body {
+      padding: 12px;
+    }
+
+    .catalog-body h3 {
+      min-height: 42px;
+      margin: 0 0 8px;
+      font-size: 16px;
+      line-height: 1.3;
+    }
+
+    .price {
+      color: var(--brand-dark);
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .flow div {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: white;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .drawer {
+      position: fixed;
+      inset: 0;
+      display: none;
+      z-index: 60;
+    }
+
+    .drawer.open { display: block; }
+
+    .drawer-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(19, 5, 82, 0.34);
+    }
+
+    .drawer-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: min(420px, 100%);
+      height: 100%;
+      padding: 18px;
+      background: white;
+      box-shadow: -12px 0 36px rgba(19, 5, 82, 0.20);
+      overflow-y: auto;
+    }
+
+    .drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .notice {
+      display: none;
+      margin-bottom: 14px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #ddf7ed;
+      color: var(--ok);
+      font-weight: 700;
+    }
+
+    .notice.show { display: block; }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      nav { grid-template-columns: repeat(3, 1fr); }
+      .widgets,
+      .charts,
+      .pos-grid,
+      .catalog,
+      .shop-hero,
+      .categories,
+      .flow {
+        grid-template-columns: 1fr;
+      }
+      .book-stack { justify-self: start; }
+    }
+
+    @media (max-width: 620px) {
+      header,
+      .section-head,
+      .shop-nav {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      main { padding: 14px; }
+      nav { grid-template-columns: 1fr 1fr; }
+      input,
+      select { width: 100%; }
+      .table-wrap { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-icon">A</div>
+      <div class="brand-text">
+        <span class="astro-word">Astro</span>
+        <small>Leer es descubrir mundos</small>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span>Usuario: Admin</span>
+      <span>Demo local: HTML + CSS + JS</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside>
+      <div class="role">
+        <strong>Rol activo</strong><br />
+        Administrador
+      </div>
+      <nav>
+        <button class="tab-btn active" data-tab="dashboard">Inicio</button>
+        <button class="tab-btn" data-tab="productos">Productos</button>
+        <button class="tab-btn" data-tab="ventas">Ventas</button>
+        <button class="tab-btn" data-tab="stock">Stock</button>
+        <button class="tab-btn" data-tab="pedidos">Pedidos Online</button>
+        <button class="tab-btn" data-tab="tienda">Tienda Online</button>
+      </nav>
+    </aside>
+
+    <main>
+      <section id="dashboard" class="section active">
+        <div class="section-head">
+          <div>
+            <h1>Bienvenido, Administrador</h1>
+            <div class="muted">Resumen actualizado segun ventas, productos, stock y pedidos.</div>
+          </div>
+          <div class="access-note">Panel privado: requiere login en PHP</div>
+        </div>
+
+        <div class="grid widgets">
+          <div class="card metric">
+            <div><span class="muted">Ventas del dia</span><strong id="metricSales">$ 0</strong></div>
+            <div class="metric-icon">$</div>
+          </div>
+          <div class="card metric">
+            <div><span class="muted">Total productos</span><strong id="metricProducts">0</strong></div>
+            <div class="metric-icon">P</div>
+          </div>
+          <div class="card metric">
+            <div><span class="muted">Stock bajo</span><strong id="metricLowStock">0</strong></div>
+            <div class="metric-icon">!</div>
+          </div>
+          <div class="card metric">
+            <div><span class="muted">Pedidos pendientes</span><strong id="metricOrders">0</strong></div>
+            <div class="metric-icon">O</div>
+          </div>
+        </div>
+
+        <div class="grid charts">
+          <div class="card">
+            <h2>Tendencia de ventas: ultimos 7 dias</h2>
+            <canvas id="salesChart" width="640" height="260"></canvas>
+          </div>
+          <div class="card">
+            <h2>Stock por ubicacion</h2>
+            <canvas id="stockChart" width="360" height="260"></canvas>
+          </div>
+        </div>
+
+        <div class="flow">
+          <div>Cliente accede</div>
+          <div>Apache recibe solicitud</div>
+          <div>PHP procesa</div>
+          <div>MySQL responde</div>
+          <div>Navegador muestra datos</div>
+        </div>
+      </section>
+
+      <section id="productos" class="section">
+        <div class="section-head">
+          <div>
+            <h1>Productos</h1>
+            <div class="muted">Alta, baja y modificacion del catalogo.</div>
+          </div>
+          <button class="btn-primary" onclick="openProductForm()">+ Nuevo Producto</button>
+        </div>
+
+        <div class="toolbar">
+          <input id="productSearch" type="search" placeholder="Buscar por nombre" />
+          <select id="categoryFilter">
+            <option value="">Todas las categorias</option>
+            <option>Novelas</option>
+            <option>Utiles</option>
+            <option>Infantil</option>
+            <option>Escolar</option>
+          </select>
+        </div>
+
+        <div class="card table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Imagen</th>
+                <th>Nombre</th>
+                <th>Categoria</th>
+                <th>Precio</th>
+                <th>Stock total</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="productRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="ventas" class="section">
+        <div class="section-head">
+          <div>
+            <h1>Nueva Venta</h1>
+            <div class="muted">Punto de venta para operaciones en sucursal.</div>
+          </div>
+        </div>
+
+        <div id="saleNotice" class="notice"></div>
+        <div class="grid pos-grid">
+          <div class="card">
+            <h2>Buscar cliente y producto</h2>
+            <div class="toolbar">
+              <input id="clientName" type="search" placeholder="Cliente opcional" />
+              <input id="posSearch" type="search" placeholder="Buscar producto..." />
+            </div>
+            <div id="suggestions" class="suggestions"></div>
+          </div>
+
+          <div class="card">
+            <h2>Carrito POS</h2>
+            <div id="cartRows"></div>
+            <div class="total-line">
+              <span>Total</span>
+              <span id="cartTotal">$ 0</span>
+            </div>
+            <div class="toolbar" style="margin-top:16px;">
+              <button class="btn-secondary" onclick="clearCart()">Vaciar carrito</button>
+              <button class="btn-primary" onclick="finishSale()">Finalizar Venta</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="stock" class="section">
+        <div class="section-head">
+          <div>
+            <h1>Stock por ubicacion</h1>
+            <div class="muted">Inventario sincronizado por deposito, sucursales y tienda online.</div>
+          </div>
+          <select id="locationFilter">
+            <option value="todas">Ver ubicacion: Todas</option>
+            <option value="deposito">Deposito</option>
+            <option value="sucursal1">Sucursal 1</option>
+            <option value="sucursal2">Sucursal 2</option>
+            <option value="online">Tienda Online</option>
+          </select>
+        </div>
+
+        <div class="card table-wrap">
+          <table>
+            <thead id="stockHead"></thead>
+            <tbody id="stockRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="pedidos" class="section">
+        <div class="section-head">
+          <div>
+            <h1>Pedidos Online</h1>
+            <div class="muted">Se generan al finalizar una compra desde la tienda.</div>
+          </div>
+        </div>
+
+        <div class="card table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Numero</th>
+                <th>Cliente</th>
+                <th>Productos</th>
+                <th>Total</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="orderRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="tienda" class="section">
+        <div class="section-head">
+          <div>
+            <h1>Tienda Online</h1>
+            <div class="muted">Vista publica del cliente. Esta parte si la ven todos los visitantes.</div>
+          </div>
+          <div class="access-note">Publica: index.php o tienda.php</div>
+        </div>
+
+        <div id="shopNotice" class="notice"></div>
+        <div class="shop-shell">
+          <div class="shop-nav">
+            <button class="hamburger" aria-label="Categorias" onclick="showAllCategories()">☰</button>
+            <div class="shop-logo"><span class="mini-logo">A</span> LIBRERIA ASTRO</div>
+            <input id="shopSearch" type="search" placeholder="Buscar libros, utiles y mas..." />
+            <button class="cart-badge" aria-label="Carrito" onclick="toggleShopCart(true)">C<span id="shopCounter">0</span></button>
+          </div>
+          <div class="shop-hero">
+            <div>
+              <h2>Descubri tu proxima lectura</h2>
+              <p>Los mejores libros, utiles escolares y articulos de libreria estan aca.</p>
+              <button class="btn-primary" onclick="scrollToCatalog()">Ver productos</button>
+            </div>
+            <div class="book-stack" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+          <div class="categories" id="categoryChips"></div>
+          <div id="catalog" class="catalog"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="shopCartDrawer" class="drawer">
+    <div class="drawer-backdrop" onclick="toggleShopCart(false)"></div>
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <h2>Carrito online</h2>
+        <button class="icon-btn" onclick="toggleShopCart(false)">X</button>
+      </div>
+      <div id="shopCartRows"></div>
+      <div class="total-line">
+        <span>Total</span>
+        <span id="shopCartTotal">$ 0</span>
+      </div>
+      <div class="toolbar" style="margin-top:16px;">
+        <button class="btn-secondary" onclick="clearShopCart()">Vaciar</button>
+        <button class="btn-primary" onclick="finishOnlinePurchase()">Finalizar compra</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const seedProducts = [
+      { id: 1, name: "Harry Potter y la piedra filosofal", category: "Novelas", price: 15000, stock: { deposito: 100, sucursal1: 25, sucursal2: 20, online: 30 } },
+      { id: 2, name: "El Principito", category: "Infantil", price: 9500, stock: { deposito: 60, sucursal1: 18, sucursal2: 12, online: 16 } },
+      { id: 3, name: "Cuaderno A4 Rayado", category: "Utiles", price: 2500, stock: { deposito: 200, sucursal1: 80, sucursal2: 60, online: 40 } },
+      { id: 4, name: "Boligrafo Azul", category: "Utiles", price: 800, stock: { deposito: 300, sucursal1: 90, sucursal2: 75, online: 55 } },
+      { id: 5, name: "Diccionario Escolar", category: "Escolar", price: 8900, stock: { deposito: 50, sucursal1: 15, sucursal2: 10, online: 5 } },
+      { id: 6, name: "Atlas Universal", category: "Escolar", price: 12000, stock: { deposito: 40, sucursal1: 10, sucursal2: 8, online: 7 } }
+    ];
+
+    const seedOrders = [
+      { number: 1007, customer: "Maria Gomez", products: "Harry Potter y la piedra filosofal, Cuaderno A4 Rayado", total: 17500, status: "Pendiente" },
+      { number: 1006, customer: "Juan Perez", products: "Boligrafo Azul", total: 800, status: "Preparado" }
+    ];
+
+    let products = JSON.parse(localStorage.getItem("astroProducts")) || seedProducts;
+    let orders = JSON.parse(localStorage.getItem("astroOrders")) || seedOrders;
+    let salesHistory = JSON.parse(localStorage.getItem("astroSales")) || [5000, 4800, 9000, 12000, 7000, 11000, 15000];
+    let posCart = [];
+    let shopCart = [];
+    let activeShopCategory = "";
+
+    const money = value => "$ " + Number(value).toLocaleString("es-AR");
+    const stockTotal = product => Object.values(product.stock).reduce((sum, item) => sum + item, 0);
+    const saveState = () => {
+      localStorage.setItem("astroProducts", JSON.stringify(products));
+      localStorage.setItem("astroOrders", JSON.stringify(orders));
+      localStorage.setItem("astroSales", JSON.stringify(salesHistory));
+    };
+
+    document.querySelectorAll(".tab-btn").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(item => item.classList.remove("active"));
+        document.querySelectorAll(".section").forEach(item => item.classList.remove("active"));
+        button.classList.add("active");
+        document.getElementById(button.dataset.tab).classList.add("active");
+        renderAll();
+      });
+    });
+
+    function showNotice(id, text) {
+      const notice = document.getElementById(id);
+      notice.textContent = text;
+      notice.classList.add("show");
+      setTimeout(() => notice.classList.remove("show"), 3500);
+    }
+
+    function renderAll() {
+      renderDashboard();
+      renderProducts();
+      renderStock();
+      renderSuggestions();
+      renderPosCart();
+      renderOrders();
+      renderCategories();
+      renderCatalog();
+      renderShopCart();
+      saveState();
+    }
+
+    function renderDashboard() {
+      const todaySales = salesHistory[salesHistory.length - 1] || 0;
+      const lowStock = products.filter(product => stockTotal(product) <= 25 || product.stock.online <= 5).length;
+      const pending = orders.filter(order => order.status === "Pendiente").length;
+
+      document.getElementById("metricSales").textContent = money(todaySales);
+      document.getElementById("metricProducts").textContent = products.length;
+      document.getElementById("metricLowStock").textContent = lowStock;
+      document.getElementById("metricOrders").textContent = pending;
+
+      drawSalesChart();
+      drawStockChart();
+    }
+
+    function renderProducts() {
+      const search = document.getElementById("productSearch").value.toLowerCase();
+      const category = document.getElementById("categoryFilter").value;
+      const rows = products
+        .filter(product => !category || product.category === category)
+        .filter(product => product.name.toLowerCase().includes(search))
+        .map(product => `
+          <tr>
+            <td>${product.id}</td>
+            <td><div class="product-img">${product.name.charAt(0)}</div></td>
+            <td>${product.name}</td>
+            <td>${product.category}</td>
+            <td>${money(product.price)}</td>
+            <td>${stockTotal(product)}</td>
+            <td>
+              <div class="actions">
+                <button class="icon-btn" title="Editar" onclick="editProduct(${product.id})">E</button>
+                <button class="icon-btn" title="Eliminar" onclick="deleteProduct(${product.id})">B</button>
+              </div>
+            </td>
+          </tr>
+        `).join("");
+
+      document.getElementById("productRows").innerHTML = rows || "<tr><td colspan='7'>No hay productos.</td></tr>";
+    }
+
+    function renderStock() {
+      const location = document.getElementById("locationFilter").value;
+      const labels = { deposito: "Deposito", sucursal1: "Sucursal 1", sucursal2: "Sucursal 2", online: "Tienda Online" };
+
+      if (location === "todas") {
+        document.getElementById("stockHead").innerHTML = `
+          <tr>
+            <th>Producto</th>
+            <th>Deposito</th>
+            <th>Sucursal 1</th>
+            <th>Sucursal 2</th>
+            <th>Tienda Online</th>
+            <th>Total</th>
+          </tr>
+        `;
+        document.getElementById("stockRows").innerHTML = products.map(product => `
+          <tr>
+            <td>${product.name}</td>
+            <td>${product.stock.deposito}</td>
+            <td>${product.stock.sucursal1}</td>
+            <td>${product.stock.sucursal2}</td>
+            <td>${product.stock.online}</td>
+            <td>${stockTotal(product)}</td>
+          </tr>
+        `).join("");
+        return;
+      }
+
+      document.getElementById("stockHead").innerHTML = `
+        <tr>
+          <th>Producto</th>
+          <th>${labels[location]}</th>
+          <th>Total general</th>
+        </tr>
+      `;
+      document.getElementById("stockRows").innerHTML = products.map(product => `
+        <tr>
+          <td>${product.name}</td>
+          <td>${product.stock[location]}</td>
+          <td>${stockTotal(product)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderSuggestions() {
+      const search = document.getElementById("posSearch").value.toLowerCase();
+      const found = products
+        .filter(product => product.name.toLowerCase().includes(search))
+        .slice(0, 6);
+
+      document.getElementById("suggestions").innerHTML = found.map(product => `
+        <div class="suggestion">
+          <div>
+            <strong>${product.name}</strong><br />
+            <span class="muted">${product.category} · Stock sucursal: ${product.stock.sucursal1}</span>
+          </div>
+          <button class="btn-primary" onclick="addToPosCart(${product.id})">Agregar</button>
+        </div>
+      `).join("");
+    }
+
+    function addToPosCart(id) {
+      const product = products.find(item => item.id === id);
+      if (!product || product.stock.sucursal1 <= 0) {
+        showNotice("saleNotice", "No hay stock disponible en sucursal.");
+        return;
+      }
+
+      const existing = posCart.find(item => item.id === id);
+      const qtyInCart = existing ? existing.qty : 0;
+      if (qtyInCart + 1 > product.stock.sucursal1) {
+        showNotice("saleNotice", "No se puede agregar mas cantidad que el stock disponible.");
+        return;
+      }
+
+      if (existing) existing.qty++;
+      else posCart.push({ id: product.id, qty: 1 });
+      renderPosCart();
+    }
+
+    function renderPosCart() {
+      const rows = posCart.map(item => {
+        const product = products.find(productItem => productItem.id === item.id);
+        return `
+          <div class="cart-row">
+            <div>
+              <strong>${product.name}</strong><br />
+              <span class="muted">${money(product.price)} x ${item.qty}</span>
+            </div>
+            <strong>${money(product.price * item.qty)}</strong>
+            <button class="icon-btn" onclick="removeFromPosCart(${item.id})">X</button>
+          </div>
+        `;
+      }).join("");
+
+      const total = posCart.reduce((sum, item) => {
+        const product = products.find(productItem => productItem.id === item.id);
+        return sum + product.price * item.qty;
+      }, 0);
+
+      document.getElementById("cartRows").innerHTML = rows || '<p class="muted">El carrito esta vacio.</p>';
+      document.getElementById("cartTotal").textContent = money(total);
+    }
+
+    function removeFromPosCart(id) {
+      posCart = posCart.filter(item => item.id !== id);
+      renderPosCart();
+    }
+
+    function clearCart() {
+      posCart = [];
+      renderPosCart();
+    }
+
+    function finishSale() {
+      if (!posCart.length) {
+        showNotice("saleNotice", "Agrega productos antes de finalizar la venta.");
+        return;
+      }
+
+      const total = posCart.reduce((sum, item) => {
+        const product = products.find(productItem => productItem.id === item.id);
+        return sum + product.price * item.qty;
+      }, 0);
+
+      posCart.forEach(item => {
+        const product = products.find(productItem => productItem.id === item.id);
+        product.stock.sucursal1 -= item.qty;
+      });
+
+      salesHistory[salesHistory.length - 1] += total;
+      posCart = [];
+      showNotice("saleNotice", "Venta finalizada. Se desconto stock de Sucursal 1 y se actualizaron estadisticas.");
+      renderAll();
+    }
+
+    function renderCategories() {
+      const categories = ["", "Novelas", "Infantil", "Escolar", "Utiles"];
+      document.getElementById("categoryChips").innerHTML = categories.map(category => `
+        <button class="category-chip ${activeShopCategory === category ? "active" : ""}" onclick="setShopCategory('${category}')">
+          ${category || "Todos"}
+        </button>
+      `).join("");
+    }
+
+    function setShopCategory(category) {
+      activeShopCategory = category;
+      renderCategories();
+      renderCatalog();
+    }
+
+    function showAllCategories() {
+      activeShopCategory = "";
+      document.getElementById("shopSearch").value = "";
+      renderCategories();
+      renderCatalog();
+    }
+
+    function renderCatalog() {
+      const search = document.getElementById("shopSearch").value.toLowerCase();
+      const items = products
+        .filter(product => !activeShopCategory || product.category === activeShopCategory)
+        .filter(product => product.name.toLowerCase().includes(search));
+
+      document.getElementById("catalog").innerHTML = items.map(product => `
+        <article class="catalog-item">
+          <div class="cover">${product.name.charAt(0)}</div>
+          <div class="catalog-body">
+            <h3>${product.name}</h3>
+            <div class="price">${money(product.price)}</div>
+            <div class="muted" style="margin-bottom:10px;">Stock online: ${product.stock.online}</div>
+            <button class="btn-primary" onclick="addToShopCart(${product.id})">Agregar al carrito</button>
+          </div>
+        </article>
+      `).join("") || '<div class="card">No se encontraron productos.</div>';
+    }
+
+    function addToShopCart(id) {
+      const product = products.find(item => item.id === id);
+      if (!product || product.stock.online <= 0) {
+        showNotice("shopNotice", "No hay stock online disponible.");
+        return;
+      }
+
+      const existing = shopCart.find(item => item.id === id);
+      const qtyInCart = existing ? existing.qty : 0;
+      if (qtyInCart + 1 > product.stock.online) {
+        showNotice("shopNotice", "No se puede agregar mas cantidad que el stock online.");
+        return;
+      }
+
+      if (existing) existing.qty++;
+      else shopCart.push({ id: product.id, qty: 1 });
+
+      renderShopCart();
+      showNotice("shopNotice", "Producto agregado al carrito.");
+    }
+
+    function renderShopCart() {
+      const counter = shopCart.reduce((sum, item) => sum + item.qty, 0);
+      document.getElementById("shopCounter").textContent = counter;
+
+      const rows = shopCart.map(item => {
+        const product = products.find(productItem => productItem.id === item.id);
+        return `
+          <div class="shop-cart-row">
+            <div>
+              <strong>${product.name}</strong><br />
+              <span class="muted">${money(product.price)} x ${item.qty}</span>
+            </div>
+            <strong>${money(product.price * item.qty)}</strong>
+            <button class="icon-btn" onclick="removeFromShopCart(${item.id})">X</button>
+          </div>
+        `;
+      }).join("");
+
+      const total = shopCart.reduce((sum, item) => {
+        const product = products.find(productItem => productItem.id === item.id);
+        return sum + product.price * item.qty;
+      }, 0);
+
+      document.getElementById("shopCartRows").innerHTML = rows || '<p class="muted">Tu carrito esta vacio.</p>';
+      document.getElementById("shopCartTotal").textContent = money(total);
+    }
+
+    function removeFromShopCart(id) {
+      shopCart = shopCart.filter(item => item.id !== id);
+      renderShopCart();
+    }
+
+    function clearShopCart() {
+      shopCart = [];
+      renderShopCart();
+    }
+
+    function finishOnlinePurchase() {
+      if (!shopCart.length) {
+        showNotice("shopNotice", "Agrega productos antes de finalizar la compra.");
+        return;
+      }
+
+      const customer = prompt("Nombre del cliente:", "Cliente web") || "Cliente web";
+      const total = shopCart.reduce((sum, item) => {
+        const product = products.find(productItem => productItem.id === item.id);
+        return sum + product.price * item.qty;
+      }, 0);
+      const productText = shopCart.map(item => {
+        const product = products.find(productItem => productItem.id === item.id);
+        return item.qty + " x " + product.name;
+      }).join(", ");
+
+      shopCart.forEach(item => {
+        const product = products.find(productItem => productItem.id === item.id);
+        product.stock.online -= item.qty;
+      });
+
+      orders.unshift({
+        number: Math.max(...orders.map(order => order.number), 1000) + 1,
+        customer,
+        products: productText,
+        total,
+        status: "Pendiente"
+      });
+      salesHistory[salesHistory.length - 1] += total;
+      shopCart = [];
+      toggleShopCart(false);
+      showNotice("shopNotice", "Compra finalizada. Se creo un pedido online pendiente y se desconto stock online.");
+      renderAll();
+    }
+
+    function renderOrders() {
+      document.getElementById("orderRows").innerHTML = orders.map(order => `
+        <tr>
+          <td>#${order.number}</td>
+          <td>${order.customer}</td>
+          <td>${order.products}</td>
+          <td>${money(order.total)}</td>
+          <td><span class="status ${order.status === "Pendiente" ? "warn" : "ok"}">${order.status}</span></td>
+        </tr>
+      `).join("") || "<tr><td colspan='5'>No hay pedidos online.</td></tr>";
+    }
+
+    function toggleShopCart(open) {
+      document.getElementById("shopCartDrawer").classList.toggle("open", open);
+      renderShopCart();
+    }
+
+    function scrollToCatalog() {
+      document.getElementById("catalog").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function openProductForm() {
+      const name = prompt("Nombre del producto:");
+      if (!name) return;
+      const category = prompt("Categoria (Novelas, Infantil, Escolar, Utiles):", "Novelas") || "Novelas";
+      const price = Number(prompt("Precio:", "1000"));
+      const online = Number(prompt("Stock tienda online:", "10"));
+
+      products.push({
+        id: Math.max(...products.map(product => product.id), 0) + 1,
+        name,
+        category,
+        price: Number.isFinite(price) ? price : 0,
+        stock: { deposito: 0, sucursal1: 0, sucursal2: 0, online: Number.isFinite(online) ? online : 0 }
+      });
+      renderAll();
+    }
+
+    function editProduct(id) {
+      const product = products.find(item => item.id === id);
+      if (!product) return;
+
+      const name = prompt("Nombre:", product.name);
+      if (!name) return;
+      const price = Number(prompt("Precio:", product.price));
+      const online = Number(prompt("Stock tienda online:", product.stock.online));
+
+      product.name = name;
+      product.price = Number.isFinite(price) ? price : product.price;
+      product.stock.online = Number.isFinite(online) ? online : product.stock.online;
+      renderAll();
+    }
+
+    function deleteProduct(id) {
+      if (!confirm("Eliminar este producto del sistema?")) return;
+      products = products.filter(product => product.id !== id);
+      posCart = posCart.filter(item => item.id !== id);
+      shopCart = shopCart.filter(item => item.id !== id);
+      renderAll();
+    }
+
+    function drawSalesChart() {
+      const canvas = document.getElementById("salesChart");
+      const ctx = canvas.getContext("2d");
+      const labels = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
+      const max = Math.max(...salesHistory, 1);
+      const padding = 42;
+      const width = canvas.width - padding * 2;
+      const height = canvas.height - padding * 2;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "#e5dcf2";
+      ctx.lineWidth = 1;
+
+      for (let i = 0; i <= 4; i++) {
+        const y = padding + (height / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(canvas.width - padding, y);
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      salesHistory.forEach((value, index) => {
+        const x = padding + (width / (salesHistory.length - 1)) * index;
+        const y = padding + height - (value / max) * height;
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = "#991fa6";
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      ctx.fillStyle = "#ea6dc9";
+      salesHistory.forEach((value, index) => {
+        const x = padding + (width / (salesHistory.length - 1)) * index;
+        const y = padding + height - (value / max) * height;
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.fillStyle = "#130552";
+      ctx.font = "13px Arial";
+      labels.forEach((label, index) => {
+        const x = padding + (width / (labels.length - 1)) * index;
+        ctx.fillText(label, x - 10, canvas.height - 12);
+      });
+    }
+
+    function drawStockChart() {
+      const canvas = document.getElementById("stockChart");
+      const ctx = canvas.getContext("2d");
+      const data = [
+        { label: "Deposito", value: products.reduce((sum, product) => sum + product.stock.deposito, 0), color: "#65026d" },
+        { label: "Sucursal 1", value: products.reduce((sum, product) => sum + product.stock.sucursal1, 0), color: "#991fa6" },
+        { label: "Sucursal 2", value: products.reduce((sum, product) => sum + product.stock.sucursal2, 0), color: "#ea6dc9" },
+        { label: "Tienda Online", value: products.reduce((sum, product) => sum + product.stock.online, 0), color: "#2441e1" }
+      ];
+      const total = data.reduce((sum, item) => sum + item.value, 0) || 1;
+      let start = -Math.PI / 2;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      data.forEach(item => {
+        const angle = (item.value / total) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(135, 120);
+        ctx.arc(135, 120, 88, start, start + angle);
+        ctx.closePath();
+        ctx.fillStyle = item.color;
+        ctx.fill();
+        start += angle;
+      });
+
+      ctx.beginPath();
+      ctx.arc(135, 120, 48, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+
+      ctx.font = "13px Arial";
+      data.forEach((item, index) => {
+        const y = 48 + index * 28;
+        ctx.fillStyle = item.color;
+        ctx.fillRect(250, y - 11, 14, 14);
+        ctx.fillStyle = "#130552";
+        ctx.fillText(item.label + ": " + item.value, 272, y);
+      });
+    }
+
+    document.getElementById("productSearch").addEventListener("input", renderProducts);
+    document.getElementById("categoryFilter").addEventListener("change", renderProducts);
+    document.getElementById("posSearch").addEventListener("input", renderSuggestions);
+    document.getElementById("locationFilter").addEventListener("change", renderStock);
+    document.getElementById("shopSearch").addEventListener("input", renderCatalog);
+
+    renderAll();
+  </script>
+</body>
+</html>

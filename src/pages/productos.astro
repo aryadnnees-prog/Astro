@@ -1,0 +1,364 @@
+---
+import AdminLayout from '../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Gestión de Productos" activeTab="productos">
+  <div class="section-head">
+    <div>
+      <h1>📚 Productos</h1>
+      <div class="muted">Administra el catálogo de la librería: alta, baja y modificación.</div>
+    </div>
+    <button class="btn-primary" onclick="abrirModal()">+ Nuevo Producto</button>
+  </div>
+
+  <style>
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .toolbar input, .toolbar select {
+      min-height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .toolbar input {
+      flex: 1;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(19, 5, 82, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      backdrop-filter: blur(4px);
+    }
+    .modal-content {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      width: 440px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      border: 1px solid var(--line);
+    }
+    .modal-content h3 {
+      margin: 0 0 20px;
+      color: var(--brand-dark);
+    }
+    .modal-content label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: var(--brand-dark);
+    }
+    .modal-content input, .modal-content select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 16px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .product-img {
+      width: 40px;
+      height: 52px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: linear-gradient(135deg, var(--purple), var(--brand), var(--blue));
+      color: white;
+      font-weight: bold;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+    }
+    .actions-cell {
+      display: flex;
+      gap: 8px;
+    }
+    .actions-cell button {
+      min-height: 34px;
+      padding: 0 12px;
+      font-size: 13px;
+    }
+  </style>
+
+  <!-- Filtros -->
+  <div class="toolbar">
+    <input id="productSearch" type="search" placeholder="Buscar por nombre..." />
+    <select id="categoryFilter">
+      <option value="">Todas las categorías</option>
+    </select>
+  </div>
+
+  <!-- Tabla de Productos -->
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Imagen</th>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th>Precio</th>
+          <th>Stock Total</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tabla">
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 20px;" class="muted">
+            Cargando catálogo...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal de CRUD -->
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <h3 id="tituloModal">Nuevo Producto</h3>
+      <input type="hidden" id="prod_id" />
+      
+      <label for="prod_nombre">Nombre del Producto</label>
+      <input type="text" id="prod_nombre" placeholder="Ej: Harry Potter" required />
+      
+      <label for="prod_categoria">Categoría</label>
+      <select id="prod_categoria" required>
+        <option value="">Seleccionar categoría</option>
+      </select>
+      
+      <label for="prod_precio">Precio (ARS)</label>
+      <input type="number" id="prod_precio" placeholder="0.00" step="0.01" required />
+      
+      <label for="prod_imagen">URL de la Imagen (opcional)</label>
+      <input type="text" id="prod_imagen" placeholder="https://..." />
+      
+      <!-- Campo de Stock Inicial (solo visible al crear) -->
+      <div id="stockGroup">
+        <label for="prod_stock_online">Stock Inicial (Tienda Online)</label>
+        <input type="number" id="prod_stock_online" placeholder="10" min="0" value="10" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn-primary" onclick="guardar()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { supabase } from '../lib/supabase';
+
+    let allProducts = [];
+    let allCategories = [];
+
+    const money = value => "$ " + Number(value).toLocaleString("es-AR");
+    const stockTotal = p => p.stock ? (p.stock.deposito + p.stock.sucursal1 + p.stock.sucursal2 + p.stock.online) : 0;
+
+    // Cargar categorías y productos iniciales
+    async function loadData() {
+      // Obtener categorías
+      const { data: categories } = await supabase
+        .from('categorias')
+        .select('*')
+        .order('nombre', { ascending: true });
+
+      allCategories = categories || [];
+
+      // Poblar filtros y select del modal
+      const filterSelect = document.getElementById('categoryFilter');
+      const formSelect = document.getElementById('prod_categoria');
+      
+      // Limpiar opciones previas
+      filterSelect.innerHTML = '<option value="">Todas las categorías</option>';
+      formSelect.innerHTML = '<option value="">Seleccionar categoría</option>';
+
+      allCategories.forEach(c => {
+        filterSelect.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
+        formSelect.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
+      });
+
+      // Obtener productos
+      await renderProductsTable();
+    }
+
+    async function renderProductsTable() {
+      const { data: products, error } = await supabase
+        .from('productos')
+        .select('*, categorias(nombre), stock(*)')
+        .order('id', { ascending: false });
+
+      if (error) {
+        console.error("Error al obtener productos", error);
+        return;
+      }
+
+      allProducts = products || [];
+      filtrar();
+    }
+
+    function filtrar() {
+      const search = document.getElementById('productSearch').value.toLowerCase();
+      const catFilter = document.getElementById('categoryFilter').value;
+
+      const filtered = allProducts.filter(p => {
+        const matchesSearch = p.nombre.toLowerCase().includes(search);
+        const matchesCat = !catFilter || String(p.categoria_id) === catFilter;
+        return matchesSearch && matchesCat;
+      });
+
+      const tbody = document.getElementById('tabla');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px;" class="muted">No se encontraron productos.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(p => {
+        const catName = p.categorias ? p.categorias.nombre : '-';
+        const totalStock = stockTotal(p);
+        const imgEl = p.imagen_url 
+          ? `<img src="${p.imagen_url}" class="product-img" alt="${p.nombre}" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid'" />
+             <div class="product-img" style="display:none">${p.nombre.charAt(0)}</div>`
+          : `<div class="product-img">${p.nombre.charAt(0)}</div>`;
+
+        return `
+          <tr>
+            <td>${p.id}</td>
+            <td>${imgEl}</td>
+            <td style="font-weight:bold; color:var(--brand-dark);">${p.nombre}</td>
+            <td>${catName}</td>
+            <td>${money(p.precio)}</td>
+            <td>${totalStock}</td>
+            <td>
+              <div class="actions-cell">
+                <button class="btn btn-secondary" onclick='editarProducto(${JSON.stringify(p)})'>Editar</button>
+                <button class="btn btn-danger" onclick="eliminarProducto(${p.id})">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Modal helpers
+    window.abrirModal = function() {
+      document.getElementById('modal').style.display = 'flex';
+      document.getElementById('prod_id').value = '';
+      document.getElementById('prod_nombre').value = '';
+      document.getElementById('prod_categoria').value = '';
+      document.getElementById('prod_precio').value = '';
+      document.getElementById('prod_imagen').value = '';
+      document.getElementById('prod_stock_online').value = '10';
+      document.getElementById('stockGroup').style.display = 'block';
+      document.getElementById('tituloModal').innerText = 'Nuevo Producto';
+    };
+
+    window.cerrarModal = function() {
+      document.getElementById('modal').style.display = 'none';
+    };
+
+    window.editarProducto = function(p) {
+      document.getElementById('prod_id').value = p.id;
+      document.getElementById('prod_nombre').value = p.nombre;
+      document.getElementById('prod_categoria').value = p.categoria_id || '';
+      document.getElementById('prod_precio').value = p.precio;
+      document.getElementById('prod_imagen').value = p.imagen_url || '';
+      
+      // Ocultar campo stock inicial al editar para evitar inconsistencias
+      document.getElementById('stockGroup').style.display = 'none';
+      
+      document.getElementById('tituloModal').innerText = 'Editar Producto';
+      document.getElementById('modal').style.display = 'flex';
+    };
+
+    window.guardar = async function() {
+      const id = document.getElementById('prod_id').value;
+      const nombre = document.getElementById('prod_nombre').value.trim();
+      const categoria_id = document.getElementById('prod_categoria').value;
+      const precio = parseFloat(document.getElementById('prod_precio').value);
+      const imagen_url = document.getElementById('prod_imagen').value.trim();
+      const stockOnline = parseInt(document.getElementById('prod_stock_online').value) || 0;
+
+      if (!nombre || !categoria_id || isNaN(precio)) {
+        alert("Por favor rellena todos los campos requeridos.");
+        return;
+      }
+
+      if (id) {
+        // Modo EDITAR
+        const { error } = await supabase
+          .from('productos')
+          .update({ nombre, categoria_id, precio, imagen_url })
+          .eq('id', id);
+
+        if (error) {
+          alert("Error al actualizar producto: " + error.message);
+          return;
+        }
+      } else {
+        // Modo CREAR
+        const { data: newProd, error } = await supabase
+          .from('productos')
+          .insert([{ nombre, categoria_id, precio, imagen_url }])
+          .select()
+          .single();
+
+        if (error) {
+          alert("Error al crear producto: " + error.message);
+          return;
+        }
+
+        // Crear fila de stock correspondiente
+        const { error: stockErr } = await supabase
+          .from('stock')
+          .insert([{ producto_id: newProd.id, online: stockOnline }]);
+
+        if (stockErr) {
+          console.error("Error al crear stock inicial", stockErr);
+        }
+      }
+
+      cerrarModal();
+      await renderProductsTable();
+    };
+
+    window.eliminarProducto = async function(id) {
+      if (!confirm("¿Estás seguro de que deseas eliminar este producto? Se eliminará también su stock.")) return;
+
+      const { error } = await supabase
+        .from('productos')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        alert("Error al eliminar producto: " + error.message);
+        return;
+      }
+
+      await renderProductsTable();
+    };
+
+    // Event listeners
+    document.getElementById('productSearch').addEventListener('input', filtrar);
+    document.getElementById('categoryFilter').addEventListener('change', filtrar);
+
+    // Inicializar al obtener sesión
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        loadData();
+      }
+    });
+  </script>
+</AdminLayout>

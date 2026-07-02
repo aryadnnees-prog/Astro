@@ -1,0 +1,331 @@
+---
+import AdminLayout from '../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Panel de Administración" activeTab="dashboard">
+  <div class="section-head">
+    <div>
+      <h1>Bienvenido, Administrador</h1>
+      <div class="muted">Resumen en tiempo real del inventario, ventas y pedidos.</div>
+    </div>
+    <div class="access-note">Conectado a Supabase Cloud</div>
+  </div>
+
+  <!-- CSS adicional para grids y flujo de datos -->
+  <style>
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+    .widgets {
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      margin-bottom: 18px;
+    }
+    .metric {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .metric strong {
+      display: block;
+      font-size: 25px;
+      margin-top: 6px;
+    }
+    .metric-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #f8eafd, #eef1ff);
+      color: var(--brand);
+      font-size: 19px;
+      font-weight: 900;
+    }
+    .charts {
+      grid-template-columns: 1.4fr 0.8fr;
+      margin-bottom: 24px;
+    }
+    canvas {
+      width: 100%;
+      max-height: 280px;
+    }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .flow div {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: white;
+      text-align: center;
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--brand-dark);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+    }
+    @media (max-width: 980px) {
+      .widgets, .charts, .flow {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <!-- Widgets de Métricas -->
+  <div class="grid widgets">
+    <div class="card metric">
+      <div>
+        <span class="muted">Ventas del día</span>
+        <strong id="metricSales">$ 0</strong>
+      </div>
+      <div class="metric-icon">$</div>
+    </div>
+    <div class="card metric">
+      <div>
+        <span class="muted">Total productos</span>
+        <strong id="metricProducts">0</strong>
+      </div>
+      <div class="metric-icon">P</div>
+    </div>
+    <div class="card metric">
+      <div>
+        <span class="muted">Stock bajo</span>
+        <strong id="metricLowStock" style="color:var(--danger)">0</strong>
+      </div>
+      <div class="metric-icon">!</div>
+    </div>
+    <div class="card metric">
+      <div>
+        <span class="muted">Pedidos pendientes</span>
+        <strong id="metricOrders" style="color:var(--warn)">0</strong>
+      </div>
+      <div class="metric-icon">O</div>
+    </div>
+  </div>
+
+  <!-- Gráficos -->
+  <div class="grid charts">
+    <div class="card">
+      <h2>Tendencia de ventas: últimos 7 días</h2>
+      <canvas id="salesChart" width="640" height="260"></canvas>
+    </div>
+    <div class="card">
+      <h2>Stock por ubicación</h2>
+      <canvas id="stockChart" width="360" height="260"></canvas>
+    </div>
+  </div>
+
+  <!-- Flujo de datos del sistema -->
+  <h2>Flujo de Integración Servidor-Navegador</h2>
+  <div class="flow">
+    <div>1. Cliente accede</div>
+    <div>2. Vercel responde (HTML/JS)</div>
+    <div>3. Cliente verifica Auth</div>
+    <div>4. Supabase devuelve Datos</div>
+    <div>5. Gráficos Renderizados</div>
+  </div>
+
+  <!-- Script de Carga de Datos y Gráficos -->
+  <script>
+    import { supabase } from '../lib/supabase';
+
+    // Formateador de moneda
+    const money = value => "$ " + Number(value).toLocaleString("es-AR");
+
+    // Inicializar carga de datos
+    async function initDashboard() {
+      // 1. Obtener productos y sus stock
+      const { data: products, error: prodErr } = await supabase
+        .from('productos')
+        .select('*, stock(*)');
+      
+      // 2. Obtener pedidos pendientes
+      const { data: pendingOrders, error: ordErr } = await supabase
+        .from('pedidos_online')
+        .select('*')
+        .eq('estado', 'pendiente');
+
+      // 3. Obtener ventas del día y de los últimos 7 días
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const { data: sales, error: salesErr } = await supabase
+        .from('ventas')
+        .select('*')
+        .gte('fecha', sevenDaysAgo.toISOString())
+        .order('fecha', { ascending: true });
+
+      if (prodErr || ordErr || salesErr) {
+        console.error("Error cargando estadísticas", { prodErr, ordErr, salesErr });
+        return;
+      }
+
+      // Procesar Métricas
+      // Ventas del día (fecha de hoy en formato local YYYY-MM-DD)
+      const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+      const todaySales = sales
+        .filter(sale => sale.fecha.split('T')[0] === todayStr)
+        .reduce((sum, sale) => sum + Number(sale.total), 0);
+
+      // Total de productos
+      const totalProducts = products ? products.length : 0;
+
+      // Stock bajo
+      const lowStockCount = products ? products.filter(p => {
+        const stk = p.stock;
+        if (!stk) return true;
+        const totalStock = stk.deposito + stk.sucursal1 + stk.sucursal2 + stk.online;
+        return totalStock <= 25 || stk.online <= 5;
+      }).length : 0;
+
+      // Pedidos pendientes
+      const pendingCount = pendingOrders ? pendingOrders.length : 0;
+
+      // Renderizar valores
+      document.getElementById('metricSales').textContent = money(todaySales);
+      document.getElementById('metricProducts').textContent = totalProducts.toString();
+      document.getElementById('metricLowStock').textContent = lowStockCount.toString();
+      document.getElementById('metricOrders').textContent = pendingCount.toString();
+
+      // Renderizar Gráficos
+      renderSalesChart(sales || []);
+      renderStockChart(products || []);
+    }
+
+    function renderSalesChart(sales) {
+      const canvas = document.getElementById("salesChart");
+      const ctx = canvas.getContext("2d");
+      
+      // Agrupar ventas por día de la semana (últimos 7 días)
+      const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+      const chartData = [];
+      const chartLabels = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toLocaleDateString('en-CA');
+        const label = dayNames[d.getDay()];
+        
+        const totalForDay = sales
+          .filter(sale => sale.fecha.split('T')[0] === dateStr)
+          .reduce((sum, sale) => sum + Number(sale.total), 0);
+
+        chartData.push(totalForDay);
+        chartLabels.push(label);
+      }
+
+      const max = Math.max(...chartData, 1000);
+      const padding = 42;
+      const width = canvas.width - padding * 2;
+      const height = canvas.height - padding * 2;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "#e5dcf2";
+      ctx.lineWidth = 1;
+
+      // Líneas de fondo
+      for (let i = 0; i <= 4; i++) {
+        const y = padding + (height / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(canvas.width - padding, y);
+        ctx.stroke();
+      }
+
+      // Dibujar línea de ventas
+      ctx.beginPath();
+      chartData.forEach((value, index) => {
+        const x = padding + (width / (chartData.length - 1)) * index;
+        const y = padding + height - (value / max) * height;
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = "#991fa6";
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // Dibujar puntos
+      ctx.fillStyle = "#ea6dc9";
+      chartData.forEach((value, index) => {
+        const x = padding + (width / (chartData.length - 1)) * index;
+        const y = padding + height - (value / max) * height;
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Dibujar etiquetas de texto
+      ctx.fillStyle = "#130552";
+      ctx.font = "bold 12px Arial";
+      chartLabels.forEach((label, index) => {
+        const x = padding + (width / (chartLabels.length - 1)) * index;
+        ctx.fillText(label, x - 10, canvas.height - 12);
+      });
+    }
+
+    function renderStockChart(products) {
+      const canvas = document.getElementById("stockChart");
+      const ctx = canvas.getContext("2d");
+      
+      // Calcular stock total acumulado por ubicación
+      let dep = 0, suc1 = 0, suc2 = 0, online = 0;
+      products.forEach(p => {
+        if (p.stock) {
+          dep += p.stock.deposito || 0;
+          suc1 += p.stock.sucursal1 || 0;
+          suc2 += p.stock.sucursal2 || 0;
+          online += p.stock.online || 0;
+        }
+      });
+
+      const data = [
+        { label: "Depósito", value: dep, color: "#65026d" },
+        { label: "Sucursal 1", value: suc1, color: "#991fa6" },
+        { label: "Sucursal 2", value: suc2, color: "#ea6dc9" },
+        { label: "Tienda Online", value: online, color: "#2441e1" }
+      ];
+      const total = data.reduce((sum, item) => sum + item.value, 0) || 1;
+      let start = -Math.PI / 2;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      data.forEach(item => {
+        const angle = (item.value / total) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(110, 120);
+        ctx.arc(110, 120, 80, start, start + angle);
+        ctx.closePath();
+        ctx.fillStyle = item.color;
+        ctx.fill();
+        start += angle;
+      });
+
+      // Efecto dona
+      ctx.beginPath();
+      ctx.arc(110, 120, 44, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+
+      // Leyenda
+      ctx.font = "12px Arial";
+      data.forEach((item, index) => {
+        const y = 50 + index * 26;
+        ctx.fillStyle = item.color;
+        ctx.fillRect(215, y - 10, 12, 12);
+        ctx.fillStyle = "#130552";
+        ctx.fillText(item.label + ": " + item.value, 235, y);
+      });
+    }
+
+    // Inicializar al cargar sesión
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        initDashboard();
+      }
+    });
+  </script>
+</AdminLayout>

@@ -1,0 +1,811 @@
+---
+// Public E-Commerce Page (No auth shield)
+---
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Librería Astro - Tienda Online</title>
+  <style>
+    :root {
+      --bg: #fbf9ff;
+      --panel: #ffffff;
+      --text: #130552;
+      --muted: #6c6592;
+      --line: #e5dcf2;
+      --brand: #991fa6;
+      --brand-dark: #130552;
+      --accent: #ea6dc9;
+      --blue: #2441e1;
+      --purple: #65026d;
+      --danger: #d93d92;
+      --ok: #16805d;
+      --warn: #a36a00;
+      --soft: #f8eafd;
+      --shadow: 0 14px 32px rgba(19, 5, 82, 0.10);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Outfit', 'Inter', Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--brand-dark);
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+    .brand-icon {
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--purple), var(--brand), var(--blue));
+      position: relative;
+      font-weight: 900;
+      box-shadow: 0 10px 24px rgba(101, 2, 109, 0.24);
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      font-size: 27px;
+    }
+
+    .brand-icon::after {
+      content: "";
+      position: absolute;
+      width: 42px;
+      height: 12px;
+      top: 11px;
+      left: 3px;
+      border: 3px solid var(--accent);
+      border-top: 0;
+      border-left-color: transparent;
+      border-radius: 50%;
+      transform: rotate(-16deg);
+    }
+
+    .brand-text {
+      display: grid;
+      line-height: 1.05;
+    }
+
+    .astro-word {
+      font-size: 25px;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+    }
+
+    .brand-text small {
+      margin-top: 4px;
+      color: var(--brand);
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-admin {
+      background: #f2e9fb;
+      color: var(--text);
+      text-decoration: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .btn-admin:hover {
+      background: #e5d2f8;
+    }
+
+    .cart-badge {
+      position: relative;
+      min-height: 42px;
+      border: 0;
+      border-radius: 8px;
+      padding: 0 16px;
+      background: linear-gradient(135deg, var(--brand), var(--accent));
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 10px rgba(153, 31, 166, 0.2);
+    }
+
+    .cart-badge span {
+      background: white;
+      color: var(--brand);
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .shop-hero {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      align-items: center;
+      gap: 18px;
+      padding: 36px 40px;
+      background:
+        radial-gradient(circle at 88% 18%, rgba(234, 109, 201, 0.25), transparent 30%),
+        linear-gradient(135deg, #fff 0%, #fbecff 45%, #eef1ff 100%);
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .shop-hero h2 {
+      margin: 0 0 10px;
+      max-width: 440px;
+      font-size: 32px;
+      line-height: 1.15;
+      color: var(--brand-dark);
+    }
+
+    .shop-hero p {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .book-stack {
+      width: 220px;
+      height: 150px;
+      justify-self: center;
+      position: relative;
+    }
+
+    .book-stack span {
+      position: absolute;
+      right: 10px;
+      width: 165px;
+      height: 38px;
+      border-radius: 8px 18px 18px 8px;
+      background: white;
+      border: 3px solid var(--blue);
+      box-shadow: 0 8px 18px rgba(19, 5, 82, 0.16);
+    }
+
+    .book-stack span:nth-child(1) {
+      top: 18px;
+      transform: rotate(-12deg);
+      background: linear-gradient(90deg, var(--purple) 0 72%, white 72%);
+      border-color: var(--purple);
+    }
+
+    .book-stack span:nth-child(2) {
+      top: 60px;
+      right: 34px;
+      background: linear-gradient(90deg, var(--accent) 0 72%, white 72%);
+      border-color: var(--accent);
+    }
+
+    .book-stack span:nth-child(3) {
+      top: 100px;
+      transform: rotate(5deg);
+      background: linear-gradient(90deg, var(--blue) 0 72%, white 72%);
+    }
+
+    .toolbar-shop {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .toolbar-shop input {
+      flex: 1;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 16px;
+      font-size: 15px;
+    }
+
+    .categories-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .category-chip {
+      padding: 10px 16px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: white;
+      color: var(--brand-dark);
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .category-chip.active, .category-chip:hover {
+      background: var(--soft);
+      color: var(--brand);
+      border-color: var(--brand);
+    }
+
+    .catalog {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .catalog-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: white;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .catalog-item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 36px rgba(19, 5, 82, 0.15);
+    }
+
+    .cover {
+      aspect-ratio: 4 / 3;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-weight: 900;
+      font-size: 26px;
+      background: linear-gradient(135deg, var(--purple), var(--brand), var(--blue));
+      position: relative;
+    }
+
+    .cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .catalog-body {
+      padding: 16px;
+    }
+
+    .catalog-body h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      min-height: 48px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      color: var(--brand-dark);
+    }
+
+    .price {
+      color: var(--brand-dark);
+      font-weight: 900;
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .stock-tag {
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .btn-add {
+      width: 100%;
+      min-height: 40px;
+      border: 0;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--brand), var(--accent));
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-add:disabled {
+      background: #eee;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    /* Drawer de Carrito */
+    .drawer {
+      position: fixed;
+      inset: 0;
+      display: none;
+      z-index: 60;
+    }
+
+    .drawer.open {
+      display: block;
+    }
+
+    .drawer-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(19, 5, 82, 0.35);
+      backdrop-filter: blur(2px);
+    }
+
+    .drawer-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: min(420px, 100%);
+      height: 100%;
+      padding: 24px;
+      background: white;
+      box-shadow: -12px 0 36px rgba(19, 5, 82, 0.20);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .drawer-head h2 {
+      margin: 0;
+      color: var(--brand-dark);
+    }
+
+    .close-btn {
+      background: #f2e9fb;
+      border: 0;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .cart-rows {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
+
+    .cart-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .total-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--brand-dark);
+      border-top: 2px dashed var(--line);
+      padding-top: 14px;
+    }
+
+    .drawer-actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .drawer-actions button {
+      flex: 1;
+      min-height: 44px;
+      border: 0;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .drawer-actions .btn-clear {
+      background: #f2e9fb;
+      color: var(--text);
+    }
+
+    .drawer-actions .btn-checkout {
+      background: linear-gradient(135deg, var(--brand), var(--accent));
+      color: white;
+    }
+
+    .notice {
+      display: none;
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      padding: 14px 20px;
+      border-radius: 8px;
+      background: #ddf7ed;
+      color: var(--ok);
+      font-weight: 700;
+      z-index: 1000;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      border: 1px solid rgba(22, 128, 93, 0.2);
+    }
+    .notice.show {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @media (max-width: 980px) {
+      .shop-hero {
+        grid-template-columns: 1fr;
+      }
+      .book-stack {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="shopNotice" class="notice"></div>
+
+  <header>
+    <a href="/tienda" class="brand">
+      <div class="brand-icon">A</div>
+      <div class="brand-text">
+        <span class="astro-word">Astro</span>
+        <small>Leer es descubrir mundos</small>
+      </div>
+    </a>
+    <div class="top-actions">
+      <a href="/dashboard" class="btn-admin">Acceso Administración</a>
+      <button class="cart-badge" onclick="toggleCart(true)">
+        🛒 Carrito <span id="shopCounter">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero -->
+    <div class="shop-hero">
+      <div>
+        <h2>Descubrí tu próxima lectura</h2>
+        <p>Los mejores libros, útiles escolares y artículos de librería están acá con envío directo.</p>
+        <button class="category-chip active" onclick="scrollToCatalog()" style="border: 0; background: linear-gradient(135deg, var(--brand), var(--accent)); color:white; padding:12px 24px; border-radius:8px; box-shadow: 0 4px 10px rgba(153, 31, 166, 0.2);">Ver catálogo</button>
+      </div>
+      <div class="book-stack">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+
+    <!-- Buscador -->
+    <div class="toolbar-shop">
+      <input id="shopSearch" type="search" placeholder="Buscar libros, útiles escolares y más..." />
+    </div>
+
+    <!-- Chips de Categoría -->
+    <div class="categories-chips" id="categoryChips">
+      <!-- Carga dinámica -->
+    </div>
+
+    <!-- Catálogo -->
+    <div id="catalog" class="catalog">
+      <!-- Carga dinámica -->
+    </div>
+  </main>
+
+  <!-- Drawer del Carrito -->
+  <div id="shopCartDrawer" class="drawer">
+    <div class="drawer-backdrop" onclick="toggleCart(false)"></div>
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <h2>Carrito Online</h2>
+        <button class="close-btn" onclick="toggleCart(false)">X</button>
+      </div>
+      
+      <div id="shopCartRows" class="cart-rows">
+        <p class="muted">El carrito está vacío.</p>
+      </div>
+
+      <div class="total-line">
+        <span>Total</span>
+        <span id="shopCartTotal">$ 0</span>
+      </div>
+
+      <div class="drawer-actions">
+        <button class="btn-clear" onclick="clearCart()">Vaciar</button>
+        <button class="btn-checkout" onclick="checkout()">Finalizar Compra</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { supabase } from '../lib/supabase';
+
+    let allProducts = [];
+    let allCategories = [];
+    let activeCategory = '';
+    let shopCart = [];
+
+    const money = value => "$ " + Number(value).toLocaleString("es-AR");
+
+    function showNotice(text) {
+      const notice = document.getElementById("shopNotice");
+      notice.textContent = text;
+      notice.classList.add("show");
+      setTimeout(() => notice.classList.remove("show"), 3500);
+    }
+
+    async function loadData() {
+      // 1. Cargar categorías
+      const { data: categories } = await supabase
+        .from('categorias')
+        .select('*')
+        .order('nombre', { ascending: true });
+
+      allCategories = categories || [];
+      renderCategoryChips();
+
+      // 2. Cargar productos
+      const { data: products } = await supabase
+        .from('productos')
+        .select('*, stock(*)');
+
+      allProducts = products || [];
+      renderCatalog();
+    }
+
+    function renderCategoryChips() {
+      const div = document.getElementById("categoryChips");
+      div.innerHTML = `
+        <button class="category-chip ${activeCategory === '' ? 'active' : ''}" onclick="selectCategory('')">Todos</button>
+      ` + allCategories.map(c => `
+        <button class="category-chip ${activeCategory === String(c.id) ? 'active' : ''}" onclick="selectCategory('${c.id}')">${c.nombre}</button>
+      `).join('');
+    }
+
+    window.selectCategory = function(catId) {
+      activeCategory = catId;
+      renderCategoryChips();
+      renderCatalog();
+    };
+
+    function renderCatalog() {
+      const search = document.getElementById("shopSearch").value.toLowerCase().trim();
+      const catalogDiv = document.getElementById("catalog");
+
+      const filtered = allProducts.filter(p => {
+        const matchesSearch = p.nombre.toLowerCase().includes(search);
+        const matchesCat = !activeCategory || String(p.categoria_id) === activeCategory;
+        return matchesSearch && matchesCat;
+      });
+
+      if (filtered.length === 0) {
+        catalogDiv.innerHTML = '<div class="card" style="grid-column: 1/-1; text-align:center; padding: 40px;" class="muted">No se encontraron productos.</div>';
+        return;
+      }
+
+      catalogDiv.innerHTML = filtered.map(p => {
+        const stockOnline = p.stock ? p.stock.online : 0;
+        const outOfStock = stockOnline <= 0;
+        const color = outOfStock ? 'color:var(--danger);' : 'color:var(--ok);';
+        
+        const imgEl = p.imagen_url 
+          ? `<img src="${p.imagen_url}" alt="${p.nombre}" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid'" />
+             <div style="display:none; height: 100%; width: 100%; place-items: center; font-weight:900;">${p.nombre.charAt(0)}</div>`
+          : `<div>${p.nombre.charAt(0)}</div>`;
+
+        return `
+          <article class="catalog-item">
+            <div class="cover">${imgEl}</div>
+            <div class="catalog-body">
+              <h3>${p.nombre}</h3>
+              <div class="price">${money(p.price || p.precio)}</div>
+              <div class="stock-tag" style="${color} font-weight:bold;">
+                ${outOfStock ? 'Sin stock' : `Stock disponible: ${stockOnline}`}
+              </div>
+              <button class="btn-add" ${outOfStock ? 'disabled' : ''} onclick="addToCart(${p.id})">
+                ${outOfStock ? 'Agotado' : 'Agregar al carrito'}
+              </button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    window.addToCart = function(id) {
+      const product = allProducts.find(p => p.id === id);
+      if (!product) return;
+
+      const stockOnline = product.stock ? product.stock.online : 0;
+
+      if (stockOnline <= 0) {
+        showNotice("No hay stock disponible para este producto.");
+        return;
+      }
+
+      const existing = shopCart.find(item => item.id === id);
+      const qtyInCart = existing ? existing.qty : 0;
+
+      if (qtyInCart + 1 > stockOnline) {
+        showNotice("No puedes agregar más de la cantidad disponible.");
+        return;
+      }
+
+      if (existing) {
+        existing.qty++;
+      } else {
+        shopCart.push({
+          id: product.id,
+          nombre: product.nombre,
+          precio: product.precio,
+          qty: 1,
+          stock: product.stock
+        });
+      }
+
+      showNotice("Producto agregado al carrito.");
+      renderCart();
+    };
+
+    function renderCart() {
+      const rowsDiv = document.getElementById("shopCartRows");
+      const totalSpan = document.getElementById("shopCartTotal");
+      const counterSpan = document.getElementById("shopCounter");
+
+      const totalItems = shopCart.reduce((sum, item) => sum + item.qty, 0);
+      counterSpan.textContent = totalItems.toString();
+
+      if (shopCart.length === 0) {
+        rowsDiv.innerHTML = '<p class="muted">El carrito está vacío.</p>';
+        totalSpan.textContent = money(0);
+        return;
+      }
+
+      rowsDiv.innerHTML = shopCart.map(item => `
+        <div class="cart-row">
+          <div>
+            <strong>${item.nombre}</strong><br />
+            <span class="muted">${money(item.precio)} x ${item.qty}</span>
+          </div>
+          <strong>${money(item.precio * item.qty)}</strong>
+          <button class="close-btn" style="width:28px; height:28px;" onclick="removeFromCart(${item.id})">X</button>
+        </div>
+      `).join('');
+
+      const total = shopCart.reduce((sum, item) => sum + (item.precio * item.qty), 0);
+      totalSpan.textContent = money(total);
+    }
+
+    window.removeFromCart = function(id) {
+      shopCart = shopCart.filter(item => item.id !== id);
+      renderCart();
+    };
+
+    window.clearCart = function() {
+      shopCart = [];
+      renderCart();
+    };
+
+    window.toggleCart = function(open) {
+      document.getElementById("shopCartDrawer").classList.toggle("open", open);
+      renderCart();
+    };
+
+    window.checkout = async function() {
+      if (shopCart.length === 0) {
+        showNotice("Tu carrito está vacío.");
+        return;
+      }
+
+      const cliente = prompt("Nombre del cliente para el pedido:", "Cliente Web") || "Cliente Web";
+
+      const total = shopCart.reduce((sum, item) => sum + (item.precio * item.qty), 0);
+      const productosText = shopCart.map(item => `${item.qty} x ${item.nombre}`).join(", ");
+
+      // 1. Obtener número de pedido máximo anterior
+      const { data: maxOrder } = await supabase
+        .from('pedidos_online')
+        .select('numero')
+        .order('numero', { ascending: false })
+        .limit(1);
+
+      const nextNumber = maxOrder && maxOrder.length > 0 ? (maxOrder[0].numero + 1) : 1001;
+
+      // 2. Insertar pedido en Supabase
+      const { error: orderErr } = await supabase
+        .from('pedidos_online')
+        .insert([{
+          numero: nextNumber,
+          cliente,
+          productos: productosText,
+          total,
+          estado: 'pendiente'
+        }]);
+
+      if (orderErr) {
+        alert("Error al realizar pedido: " + orderErr.message);
+        return;
+      }
+
+      // 3. Descontar stock online para cada producto en Supabase
+      for (const item of shopCart) {
+        const currentStock = item.stock ? item.stock.online : 0;
+        const newStock = Math.max(0, currentStock - item.qty);
+
+        await supabase
+          .from('stock')
+          .update({ online: newStock })
+          .eq('producto_id', item.id);
+      }
+
+      showNotice(`Compra finalizada con éxito. Pedido #${nextNumber} registrado.`);
+      
+      // Limpiar estados
+      shopCart = [];
+      toggleCart(false);
+      await loadData(); // Recargar catálogo con stock actualizado
+    };
+
+    window.scrollToCatalog = function() {
+      document.getElementById("shopSearch").scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // Event listeners
+    document.getElementById("shopSearch").addEventListener("input", renderCatalog);
+
+    // Cargar datos al iniciar
+    loadData();
+  </script>
+</body>
+</html>

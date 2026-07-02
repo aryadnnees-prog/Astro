@@ -1,0 +1,247 @@
+---
+// Server-side code (static page)
+---
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Librería Astro - Login</title>
+  <style>
+    :root {
+      --bg: #fbf9ff;
+      --panel: #ffffff;
+      --text: #130552;
+      --muted: #6c6592;
+      --line: #e5dcf2;
+      --brand: #991fa6;
+      --brand-dark: #130552;
+      --accent: #ea6dc9;
+      --blue: #2441e1;
+      --purple: #65026d;
+      --danger: #d93d92;
+      --ok: #16805d;
+      --warn: #a36a00;
+      --soft: #f8eafd;
+      --shadow: 0 14px 32px rgba(19, 5, 82, 0.10);
+    }
+    body {
+      font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, var(--brand-dark), var(--purple), var(--blue));
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      color: var(--text);
+    }
+    .box {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      width: 380px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: transform 0.3s ease;
+    }
+    .box:hover {
+      transform: translateY(-5px);
+    }
+    .brand-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .brand-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--purple), var(--brand), var(--blue));
+      color: white;
+      font-size: 32px;
+      font-weight: 900;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 15px;
+      box-shadow: 0 8px 20px rgba(153, 31, 166, 0.3);
+      position: relative;
+    }
+    .brand-icon::after {
+      content: "";
+      position: absolute;
+      width: 52px;
+      height: 14px;
+      top: 14px;
+      left: 4px;
+      border: 3px solid var(--accent);
+      border-top: 0;
+      border-left-color: transparent;
+      border-radius: 50%;
+      transform: rotate(-16deg);
+    }
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      color: var(--brand-dark);
+      letter-spacing: 1px;
+    }
+    p.subtitle {
+      color: var(--muted);
+      margin: 5px 0 0;
+      font-size: 14px;
+    }
+    .input-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 15px;
+      transition: all 0.3s ease;
+      background: #fafafa;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--brand);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(153, 31, 166, 0.1);
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--brand), var(--accent));
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 700;
+      box-shadow: 0 8px 20px rgba(153, 31, 166, 0.25);
+      transition: all 0.3s ease;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(153, 31, 166, 0.35);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .error {
+      color: var(--danger);
+      background: #fdf2f8;
+      border: 1px solid rgba(217, 61, 146, 0.2);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .footer-text {
+      text-align: center;
+      margin-top: 25px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .loading-spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, .3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+      display: none;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+<div class="box">
+  <div class="brand-header">
+    <div class="brand-icon">A</div>
+    <h1>Librería Astro</h1>
+    <p class="subtitle">Ingresa tus credenciales de Supabase</p>
+  </div>
+  
+  <div class="error" id="errorBox"></div>
+  
+  <form id="loginForm">
+    <div class="input-group">
+      <input type="email" id="email" placeholder="Correo Electrónico" required autocomplete="email">
+    </div>
+    <div class="input-group">
+      <input type="password" id="password" placeholder="Contraseña" required autocomplete="current-password">
+    </div>
+    <button type="submit" id="submitBtn">
+      <span class="loading-spinner" id="spinner"></span>
+      <span id="btnText">Ingresar</span>
+    </button>
+  </form>
+  <div class="footer-text">
+    Sistema de Gestión de Inventario & Tienda Online
+  </div>
+</div>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  // Redirigir si ya está autenticado
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session) {
+      window.location.href = '/dashboard';
+    }
+  });
+
+  const form = document.getElementById('loginForm');
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const errorBox = document.getElementById('errorBox');
+  const submitBtn = document.getElementById('submitBtn');
+  const spinner = document.getElementById('spinner');
+  const btnText = document.getElementById('btnText');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // UI Loading state
+    errorBox.style.display = 'none';
+    spinner.style.display = 'inline-block';
+    btnText.textContent = 'Ingresando...';
+    submitBtn.disabled = true;
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Redirigir al dashboard en caso de éxito
+      window.location.href = '/dashboard';
+    } catch (err) {
+      errorBox.textContent = err.message || 'Usuario o contraseña incorrectos';
+      errorBox.style.display = 'block';
+      
+      // Reset button state
+      spinner.style.display = 'none';
+      btnText.textContent = 'Ingresar';
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

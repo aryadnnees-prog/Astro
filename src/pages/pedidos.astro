@@ -1,0 +1,151 @@
+---
+import AdminLayout from '../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Pedidos Online" activeTab="pedidos">
+  <div class="section-head">
+    <div>
+      <h1>📦 Pedidos Online</h1>
+      <div class="muted">Listado de pedidos generados por clientes desde la tienda virtual.</div>
+    </div>
+  </div>
+
+  <style>
+    .status {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .status.pendiente {
+      background: #fff2d8;
+      color: var(--warn);
+    }
+    .status.preparado {
+      background: #e3f2fd;
+      color: var(--blue);
+    }
+    .status.entregado {
+      background: #ddf7ed;
+      color: var(--ok);
+    }
+    .actions-cell {
+      display: flex;
+      gap: 6px;
+    }
+    .actions-cell button {
+      min-height: 32px;
+      padding: 0 10px;
+      font-size: 12px;
+    }
+  </style>
+
+  <!-- Tabla de Pedidos -->
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <table>
+      <thead>
+        <tr>
+          <th>Número</th>
+          <th>Cliente</th>
+          <th>Productos</th>
+          <th>Total</th>
+          <th>Estado</th>
+          <th>Fecha</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="pedidoRows">
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 20px;" class="muted">
+            Cargando pedidos...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    import { supabase } from '../lib/supabase';
+
+    let allOrders = [];
+
+    const money = value => "$ " + Number(value).toLocaleString("es-AR");
+
+    async function loadOrders() {
+      const { data, error } = await supabase
+        .from('pedidos_online')
+        .select('*')
+        .order('numero', { ascending: false });
+
+      if (error) {
+        console.error("Error al cargar pedidos", error);
+        return;
+      }
+
+      allOrders = data || [];
+      renderOrders();
+    }
+
+    function renderOrders() {
+      const tbody = document.getElementById("pedidoRows");
+
+      if (allOrders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;" class="muted">No hay pedidos online registrados.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = allOrders.map(order => {
+        const date = new Date(order.creado_en).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+        
+        let actionsHtml = '';
+        if (order.estado === 'pendiente') {
+          actionsHtml = `<button class="btn btn-primary" onclick="updateOrderStatus(${order.id}, 'preparado')">Marcar Preparado</button>`;
+        } else if (order.estado === 'preparado') {
+          actionsHtml = `<button class="btn btn-secondary" onclick="updateOrderStatus(${order.id}, 'entregado')">Entregar</button>`;
+        } else {
+          actionsHtml = `<span class="muted">- Entregado -</span>`;
+        }
+
+        return `
+          <tr>
+            <td><strong>#${order.numero}</strong></td>
+            <td style="color:var(--brand-dark); font-weight:bold;">${order.cliente}</td>
+            <td style="max-width:300px; font-size:13px; line-height:1.4;">${order.productos}</td>
+            <td><strong>${money(order.total)}</strong></td>
+            <td><span class="status ${order.estado}">${order.estado}</span></td>
+            <td class="muted">${date}</td>
+            <td>
+              <div class="actions-cell">
+                ${actionsHtml}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    window.updateOrderStatus = async function(id, newStatus) {
+      const { error } = await supabase
+        .from('pedidos_online')
+        .update({ estado: newStatus })
+        .eq('id', id);
+
+      if (error) {
+        alert("Error al actualizar estado del pedido: " + error.message);
+        return;
+      }
+
+      await loadOrders();
+    };
+
+    // Inicializar al obtener sesión
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        loadOrders();
+      }
+    });
+  </script>
+</AdminLayout>
